@@ -40,10 +40,10 @@ import ccw.editors.rulesbased.ClojurePartitionScanner;
 public class ClojureSourceViewerConfiguration extends
 		TextSourceViewerConfiguration {
 	protected ITokenScanner tokenScanner;
-	private final AntlrBasedClojureEditor editor;
+	private final IClojureEditor editor;
 
 	public ClojureSourceViewerConfiguration(IPreferenceStore preferenceStore,
-			AntlrBasedClojureEditor editor) {
+			IClojureEditor editor) {
 		super(preferenceStore);
 		initTokenScanner();
 		this.editor = editor;
@@ -90,8 +90,7 @@ public class ClojureSourceViewerConfiguration extends
 	public IContentAssistant getContentAssistant(ISourceViewer sourceViewer) {
 		ContentAssistant assistant = new ContentAssistant();
 
-		assistant
-				.setDocumentPartitioning(ClojurePartitionScanner.CLOJURE_PARTITIONING);
+		assistant.setDocumentPartitioning(ClojurePartitionScanner.CLOJURE_PARTITIONING);
 		assistant.setContentAssistProcessor(new ClojureProposalProcessor(
 				editor, assistant), IDocument.DEFAULT_CONTENT_TYPE);
 		assistant.setContentAssistProcessor(new ClojureProposalProcessor(

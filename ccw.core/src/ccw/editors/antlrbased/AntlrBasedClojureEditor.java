@@ -15,6 +15,8 @@ import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.debug.core.ILaunchManager;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.ui.PreferenceConstants;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -59,7 +61,7 @@ import ccw.editors.rulesbased.ClojureDocumentProvider;
 import ccw.editors.rulesbased.ClojurePartitionScanner;
 import ccw.launching.ClojureLaunchShortcut;
 
-public class AntlrBasedClojureEditor extends TextEditor {
+public class AntlrBasedClojureEditor extends TextEditor implements IClojureEditor {
 	public static final String EDITOR_REFERENCE_HELP_CONTEXT_ID = "ccw.branding.editor_context_help";
     public static final String STATUS_CATEGORY_STRUCTURAL_EDITION = "CCW.STATUS_CATEGORY_STRUCTURAL_EDITING_POSSIBLE";
 	
@@ -110,10 +112,14 @@ public class AntlrBasedClojureEditor extends TextEditor {
 		return useStrictStructuralEditing;
 	}
 	
+	public boolean isStructuralEditingEnabled () {
+	    // @todo eliminate non-idomatic useStrictStructuralEditing method
+	    return useStrictStructuralEditing();
+	}
+	
 	public AntlrBasedClojureEditor() {
-	    IPreferenceStore preferenceStore = createCombinedPreferenceStore();
-		setSourceViewerConfiguration(new ClojureSourceViewerConfiguration(preferenceStore, this));
-		setPreferenceStore(preferenceStore);
+        setPreferenceStore(CCWPlugin.getDefault().getCombinedPreferenceStore());
+		setSourceViewerConfiguration(new ClojureSourceViewerConfiguration(getPreferenceStore(), this));
         setDocumentProvider(new ClojureDocumentProvider()); 
         setHelpContextId(EDITOR_REFERENCE_HELP_CONTEXT_ID);
 	}
@@ -173,7 +179,7 @@ public class AntlrBasedClojureEditor extends TextEditor {
 	}
 
 	private boolean inEscapeSequence;
-	public boolean isInEscapeSequence() {
+	public boolean isInEscapeSequence () {
 		return inEscapeSequence;
 	}
 	
@@ -193,10 +199,6 @@ public class AntlrBasedClojureEditor extends TextEditor {
 						}
 					}
 				});
-	}
-
-	public boolean getBooleanPreference(String key) {
-		return getPreferenceStore().getBoolean(key);
 	}
 	
 	public void setStructuralEditingPossible(boolean state) {
@@ -246,21 +248,6 @@ public class AntlrBasedClojureEditor extends TextEditor {
     @Override
     public ISelectionProvider getSelectionProvider() {
         return getSourceViewer().getSelectionProvider();
-    }
-
-    /**
-     * Create a preference store combined from the Clojure, the EditorsUI and
-     * the PlatformUI preference stores to inherit all the default text editor
-     * settings from the Eclipse preferences.
-     * 
-     * @return the combined preference store.
-     */
-    private IPreferenceStore createCombinedPreferenceStore() {
-        List<IPreferenceStore> stores = new LinkedList<IPreferenceStore>();
-        stores.add(CCWPlugin.getDefault().getPreferenceStore());
-        stores.add(EditorsUI.getPreferenceStore());
-        stores.add(PlatformUI.getPreferenceStore());
-        return new ChainedPreferenceStore(stores.toArray(new IPreferenceStore[stores.size()]));
     }
 
 	@Override
@@ -370,7 +357,7 @@ public class AntlrBasedClojureEditor extends TextEditor {
 		if (document == null)
 			return;
 
-		IRegion selection= getSignedSelection(sourceViewer);
+		IRegion selection= getSignedSelection();
 
 		int selectionLength= Math.abs(selection.getLength());
 		if (selectionLength > 1) {
@@ -464,7 +451,7 @@ public class AntlrBasedClojureEditor extends TextEditor {
 		if (getDocument() == null)
 			return false;
 		
-		IRegion selection= getSignedSelection(getSourceViewer());
+		IRegion selection= getSignedSelection();
 
 		int selectionLength= Math.abs(selection.getLength());
 		if (selectionLength > 0) {
@@ -486,7 +473,7 @@ public class AntlrBasedClojureEditor extends TextEditor {
 	 * @return
 	 */
 	public int getSourceCaretOffset() {
-		IRegion selection= getSignedSelection(getSourceViewer());
+		IRegion selection= getSignedSelection();
 		return selection.getOffset() + selection.getLength();
 	}
 	
@@ -643,84 +630,12 @@ public class AntlrBasedClojureEditor extends TextEditor {
 		return false;
 	}
 
-	/**
-	 * Returns the signed current selection.
-	 * The length will be negative if the resulting selection
-	 * is right-to-left (RtoL).
-	 * <p>
-	 * The selection offset is model based.
-	 * </p>
-	 *
-	 * @param sourceViewer the source viewer
-	 * @return a region denoting the current signed selection, for a resulting RtoL selections length is < 0
-	 */
-	public IRegion getSignedSelection(ISourceViewer sourceViewer) {
-		if (sourceViewer == null) {
-			sourceViewer = getSourceViewer();
-		}
-		StyledText text= sourceViewer.getTextWidget();
-		Point selection= text.getSelectionRange();
-
-		if (text.getCaretOffset() == selection.x) {
-			selection.x= selection.x + selection.y;
-			selection.y= -selection.y;
-		}
-
-		selection.x= widgetOffset2ModelOffset(sourceViewer, selection.x);
-
-		return new Region(selection.x, selection.y);
+	public IRegion getUnSignedSelection () {
+	    return ((ClojureSourceViewer)getSourceViewer()).getUnSignedSelection();
 	}
 	
-	/**
-	 * Returns the signed current selection.
-	 * The length will be negative if the resulting selection
-	 * is right-to-left (RtoL).
-	 * <p>
-	 * The selection offset is model based.
-	 * </p>
-	 *
-	 * @param sourceViewer the source viewer
-	 * @return a region denoting the current signed selection, for a resulting RtoL selections length is < 0
-	 */
-	public IRegion getSignedSelection() {
-		return getSignedSelection(null);
-	}
-	
-	
-	/**
-	 * Returns the unsigned current selection.
-	 * The length will always be positive.
-	 * <p>
-	 * The selection offset is model based.
-	 * </p>
-	 *
-	 * @param sourceViewer the source viewer
-	 * @return a region denoting the current unsigned selection
-	 */
-	public IRegion getUnSignedSelection(ISourceViewer sourceViewer) {
-		if (sourceViewer == null) {
-			sourceViewer = getSourceViewer();
-		}
-		StyledText text= sourceViewer.getTextWidget();
-		Point selection= text.getSelectionRange();
-
-		selection.x= widgetOffset2ModelOffset(sourceViewer, selection.x);
-
-		return new Region(selection.x, selection.y);
-	}
-	
-	/**
-	 * Returns the unsigned current selection.
-	 * The length will always be positive.
-	 * <p>
-	 * The selection offset is model based.
-	 * </p>
-	 *
-	 * @param sourceViewer the source viewer
-	 * @return a region denoting the current unsigned selection
-	 */
-	public IRegion getUnSignedSelection() {
-		return getUnSignedSelection(null);
+	public IRegion getSignedSelection () {
+	    return ((ClojureSourceViewer)getSourceViewer()).getSignedSelection();
 	}
 	
 	/*
@@ -773,7 +688,7 @@ public class AntlrBasedClojureEditor extends TextEditor {
 	}
 
 	public String getSelectedText() {
-		IRegion r = getUnSignedSelection(getSourceViewer());
+		IRegion r = getUnSignedSelection();
 		
 		if (r != null) {
 			try {
@@ -786,8 +701,12 @@ public class AntlrBasedClojureEditor extends TextEditor {
 		}
 	}
 
-	public String getDeclaringNamespace() {
-		return ClojureCore.getDeclaringNamespace(getDocument().get());
+	public IJavaProject getAssociatedProject () {
+	    return JavaCore.create(((IFile)getEditorInput().getAdapter(IFile.class)).getProject());
+	}
+	
+	public String getDeclaringNamespace () {
+		return ((ClojureSourceViewer)getSourceViewer()).getDeclaringNamespace();
 	}
 	
 	public ClojureClient getCorrespondingClojureClient() {

@@ -14,6 +14,7 @@ package ccw;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.eclipse.core.resources.IProject;
@@ -35,7 +36,10 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
+import org.eclipse.ui.texteditor.ChainedPreferenceStore;
 import org.osgi.framework.BundleContext;
 
 import ccw.debug.ClojureClient;
@@ -133,6 +137,25 @@ public class CCWPlugin extends AbstractUIPlugin {
 
     public final Font getJavaSymbolFont() {
         return getFontRegistry().getItalic("");
+    }
+
+    private IPreferenceStore prefs;
+    
+    /**
+     * Create a preference store combined from the Clojure, the EditorsUI and
+     * the PlatformUI preference stores to inherit all the default text editor
+     * settings from the Eclipse preferences.
+     * 
+     * @return the combined preference store.
+     */
+    public IPreferenceStore getCombinedPreferenceStore() {
+        if (prefs == null) {
+            prefs = new ChainedPreferenceStore(new IPreferenceStore[] {
+                    CCWPlugin.getDefault().getPreferenceStore(),
+                    EditorsUI.getPreferenceStore(),
+                    PlatformUI.getPreferenceStore()});
+        }
+        return prefs;
     }
 
     private void loadPluginClojureCode() throws Exception {

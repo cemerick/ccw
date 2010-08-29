@@ -824,6 +824,15 @@
           id="ccw.category.views"
           name="Clojure Views">
     </category>
+    <view
+          allowMultiple="false"
+          category="ccw.category.views"
+          class="ccw.repl.REPLPart"
+          icon="icons/clojure16x16.png"
+          id="ccw.view.repl"
+          name="REPL"
+          restorable="false">
+    </view>
  </extension>
  <extension
        point="org.eclipse.ui.perspectiveExtensions">

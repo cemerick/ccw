@@ -11,9 +11,15 @@
 
 package ccw.editors.antlrbased;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferenceConverter;
+import org.eclipse.jface.text.IRegion;
+import org.eclipse.jface.text.Region;
+import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.text.source.IOverviewRuler;
+import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.text.source.IVerticalRuler;
 import org.eclipse.jface.text.source.SourceViewerConfiguration;
 import org.eclipse.jface.text.source.projection.ProjectionViewer;
@@ -21,6 +27,7 @@ import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
@@ -28,9 +35,11 @@ import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 
 import ccw.CCWPlugin;
+import ccw.ClojureCore;
+import ccw.debug.ClojureClient;
 
 public class ClojureSourceViewer extends ProjectionViewer implements
-        IPropertyChangeListener {
+        IClojureEditor, IPropertyChangeListener {
     /**
      * The preference store.
      */
@@ -225,5 +234,59 @@ public class ClojureSourceViewer extends ProjectionViewer implements
 
         fIsConfigured= false;
         fConfiguration = null;
+    }
+    
+    public IRegion getSignedSelection () {
+        StyledText text = getTextWidget();
+        Point selection = text.getSelectionRange();
+
+        if (text.getCaretOffset() == selection.x) {
+            selection.x = selection.x + selection.y;
+            selection.y = -selection.y;
+        }
+
+        selection.x = widgetOffset2ModelOffset(selection.x);
+
+        return new Region(selection.x, selection.y);
+    }
+    
+    public IRegion getUnSignedSelection () {
+        StyledText text = getTextWidget();
+        Point selection = text.getSelectionRange();
+
+        selection.x = widgetOffset2ModelOffset(selection.x);
+
+        return new Region(selection.x, selection.y);
+    }
+
+    public void selectAndReveal(int start, int length) {
+        setSelection(new TextSelection(start, length), true);
+    }
+
+    public boolean isStructuralEditingEnabled() {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    public boolean isInEscapeSequence() {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    public String getDeclaringNamespace() {
+        return ClojureCore.getDeclaringNamespace(getDocument().get());
+    }
+
+    public IJavaProject getAssociatedProject() {
+        return null;
+    }
+    
+    public ClojureClient getCorrespondingClojureClient() {
+        // @todo we can fix this in general, at least for REPL usages
+        return null;
+    }
+    
+    public void setStructuralEditingPossible (boolean possible) {
+        
     }
 }

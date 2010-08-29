@@ -26,6 +26,7 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.launching.JavaLaunchDelegate;
+import org.eclipse.ui.internal.Workbench;
 
 import ccw.CCWPlugin;
 import ccw.ClojureCore;

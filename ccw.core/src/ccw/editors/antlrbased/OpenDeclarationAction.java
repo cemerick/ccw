@@ -29,7 +29,7 @@ public class OpenDeclarationAction extends Action {
 
     @Override
     public void run() {
-        int caretOffset = editor.getUnSignedSelection(editor.sourceViewer()).getOffset();
+        int caretOffset = editor.getUnSignedSelection().getOffset();
         Tokens tokens = new Tokens(editor.getDocument(), caretOffset);
         tokens.tokenAtCaret();
         String tokenContents = tokens.tokenContents();
